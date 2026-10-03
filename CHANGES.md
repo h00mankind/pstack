@@ -2,6 +2,10 @@
 
 This file is the release changelog, with one `## <version> - <title>` entry per release, newest first. The Cursor-to-Claude rewrite rules live in [`tools/substitutions.json`](tools/substitutions.json), and the [sync boundary](CONTRIBUTING.md#the-sync-boundary) in `CONTRIBUTING.md` defines how a change to upstream's skill content is declared.
 
+## 0.9.65 - the fork is named pstack
+
+This fork lives at `h00mankind/pstack`. The Claude Code and Codex marketplaces are named `pstack`, so the install id is `pstack@pstack`. The install commands, the manifests' homepage and repository links, the plugin README links, and the security policy point at the fork. The author, license, and notice lines still credit Michael Denyer's `pstack-claude` port, and the issue links in `CONTRIBUTING.md` still point at the upstream issues they cite.
+
 ## 0.9.64 - cross-provider subagents in T3 Code
 
 A T3 Code thread exposes a `delegate_task` tool that starts a child agent on any configured provider. The new `poteto-mode/references/t3-tools.md` maps pstack's subagent dispatch to it, and poteto-mode's Platform Adaptation section points there. A role value of the form `<providerInstanceId>/<model>` in the override sheet runs that seat through `delegate_task`, so a panel can cross providers. Family names still go to the harness's own subagent tool, and the defaults are unchanged.

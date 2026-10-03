@@ -1,6 +1,6 @@
 # pstack
 
-Lauren Tan's [pstack](https://github.com/cursor/plugins/tree/main/pstack) is an opinionated Cursor skill stack that improves agent outcomes. This is a port for Claude Code, Codex, Pi and other agent harnesses. It tracks upstream and also carries named policy forks, each declared in [`tools/forks.json`](tools/forks.json).
+Lauren Tan's [pstack](https://github.com/cursor/plugins/tree/main/pstack) is an opinionated Cursor skill stack that improves agent outcomes. This is a port for Claude Code, Codex, Pi and other agent harnesses. This repository is a fork of Michael Denyer's [pstack-claude](https://github.com/michael-denyer/pstack-claude) port, and it adds cross-provider subagents for T3 Code. It tracks upstream and also carries named policy forks, each declared in [`tools/forks.json`](tools/forks.json).
 
 Tell `poteto-mode` your goal and it will invoke the correct workflow for the task. It keeps your code concise, simple and verified.
 
@@ -13,8 +13,8 @@ For concurrency bugs and invariants that tests cannot reach, see the separate [a
 Run in Claude Code:
 
 ```text
-/plugin marketplace add michael-denyer/pstack-claude
-/plugin install pstack@pstack-claude
+/plugin marketplace add h00mankind/pstack
+/plugin install pstack@pstack
 ```
 
 ### Codex
@@ -22,8 +22,8 @@ Run in Claude Code:
 Run in your terminal:
 
 ```shell
-codex plugin marketplace add michael-denyer/pstack-claude
-codex plugin add pstack@pstack-claude
+codex plugin marketplace add h00mankind/pstack
+codex plugin add pstack@pstack
 ```
 
 ### Pi
@@ -31,7 +31,7 @@ codex plugin add pstack@pstack-claude
 Run in your terminal:
 
 ```shell
-pi install git:github.com/michael-denyer/pstack-claude
+pi install git:github.com/h00mankind/pstack
 ```
 
 The package loads the skills and the pstack Pi extension, which adds the subagent, question, and wake-up tools the skills use, plus `/loop` and the routing instruction. Invoke a skill with `/skill:<name>`.

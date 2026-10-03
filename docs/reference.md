@@ -77,8 +77,8 @@ Skills-only installs and other runtimes do not include the hook or the Pi extens
 Use this path for Prime Agent, opencode, Gemini CLI, or a skills-only Codex installation. Clone the repository and link its skills into `~/.agents/skills/`:
 
 ```shell
-git clone https://github.com/michael-denyer/pstack-claude
-cd pstack-claude
+git clone https://github.com/h00mankind/pstack
+cd pstack
 mkdir -p ~/.agents/skills
 for s in plugins/pstack/skills/*/; do
   target=~/.agents/skills/"$(basename "$s")"
@@ -99,14 +99,14 @@ To update, pull changes in the clone that the links point to. To uninstall a lin
 To install without keeping a local clone:
 
 ```shell
-npx skills add https://github.com/michael-denyer/pstack-claude/tree/main/plugins/pstack/skills --skill "*" --agent "*" --yes
+npx skills add https://github.com/h00mankind/pstack/tree/main/plugins/pstack/skills --skill "*" --agent "*" --yes
 ```
 
 The [CI installation check](../.github/workflows/ci.yml) uses the skills CLI to copy the checkout's skill tree and compare the installed files with their sources.
 
 ### Codex
 
-The [native plugin manifest](../plugins/pstack/.codex-plugin/plugin.json) points to the shared skills directory and the Codex [SessionStart hook](../plugins/pstack/hooks/codex-hooks.json). The [marketplace catalog](../.agents/plugins/marketplace.json) lists `pstack` in the `pstack-claude` marketplace. Review and trust the hook through `/hooks`; Codex asks again when its definition changes.
+The [native plugin manifest](../plugins/pstack/.codex-plugin/plugin.json) points to the shared skills directory and the Codex [SessionStart hook](../plugins/pstack/hooks/codex-hooks.json). The [marketplace catalog](../.agents/plugins/marketplace.json) lists `pstack` in the `pstack` marketplace. Review and trust the hook through `/hooks`; Codex asks again when its definition changes.
 
 The [README installation](../README.md#codex) registers that catalog with `codex plugin marketplace add`, then installs the plugin with `codex plugin add`. These commands match the help output from `codex-cli 0.154.0-alpha.6.2`. A fresh native installation was not tested for this documentation change.
 
@@ -135,7 +135,7 @@ Each shortcut invokes its skill. The commands skip existing files and links. Rem
 
 ### Pi
 
-The repository root is a [Pi package](https://pi.dev/packages): its [`package.json`](../package.json) lists the shared skills directory and the [pstack Pi extension](../plugins/pstack/pi/index.ts). Install it with `pi install git:github.com/michael-denyer/pstack-claude`, or `pi install <clone path>` for a local checkout.
+The repository root is a [Pi package](https://pi.dev/packages): its [`package.json`](../package.json) lists the shared skills directory and the [pstack Pi extension](../plugins/pstack/pi/index.ts). Install it with `pi install git:github.com/h00mankind/pstack`, or `pi install <clone path>` for a local checkout.
 
 The extension supplies what Pi lacks natively, under the Claude Code names the skills use:
 
