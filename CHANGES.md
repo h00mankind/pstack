@@ -2,6 +2,12 @@
 
 This file is the release changelog, with one `## <version> - <title>` entry per release, newest first. The Cursor-to-Claude rewrite rules live in [`tools/substitutions.json`](tools/substitutions.json), and the [sync boundary](CONTRIBUTING.md#the-sync-boundary) in `CONTRIBUTING.md` defines how a change to upstream's skill content is declared.
 
+## 0.9.64 - cross-provider subagents in T3 Code
+
+A T3 Code thread exposes a `delegate_task` tool that starts a child agent on any configured provider. The new `poteto-mode/references/t3-tools.md` maps pstack's subagent dispatch to it, and poteto-mode's Platform Adaptation section points there. A role value of the form `<providerInstanceId>/<model>` in the override sheet runs that seat through `delegate_task`, so a panel can cross providers. Family names still go to the harness's own subagent tool, and the defaults are unchanged.
+
+The mapping keeps writers on the harness's own tool. A live session showed that a `delegate_task` child shares the parent's checkout, that plan mode does not stop a Codex child writing, and that the children saw no pstack skills in a setup where pstack was installed for no provider. No pstack skill has yet dispatched through `delegate_task` in a live session.
+
 ## 0.9.63 - the description starts with a capital
 
 The plugin description in every manifest starts with "If" instead of "if".
