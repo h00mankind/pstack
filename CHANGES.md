@@ -2,6 +2,14 @@
 
 This file is the release changelog, with one `## <version> - <title>` entry per release, newest first. The Cursor-to-Claude rewrite rules live in [`tools/substitutions.json`](tools/substitutions.json), and the [sync boundary](CONTRIBUTING.md#the-sync-boundary) in `CONTRIBUTING.md` defines how a change to upstream's skill content is declared.
 
+## 0.9.66 - a verifiers role, a fast mode line, and a T3 preset
+
+`models.json` has a new `verifiers` role. The Shipping playbook's per-PR verifier and the Orchestrate playbook's dedicated verifier agent run on it, where they named no role before. Its default is the single-role default, so nothing changes without an override.
+
+The override sheet has a new `fast mode` line. `off`, the value `setup-pstack` writes, makes each T3 Code `delegate_task` call turn the provider's fast mode off. `provider` passes no fast-mode option. The line is inert outside a T3 Code thread.
+
+`poteto-mode/references/t3-tools.md` gains a preset sheet for a T3 Code thread, which `setup-pstack` starts from when no sheet exists. It also says how a verifier seat runs through `delegate_task`.
+
 ## 0.9.65 - the fork is named pstack
 
 This fork lives at `h00mankind/pstack`. The Claude Code and Codex marketplaces are named `pstack`, so the install id is `pstack@pstack`. The install commands, the manifests' homepage and repository links, the plugin README links, and the security policy point at the fork. The author, license, and notice lines still credit Michael Denyer's `pstack-claude` port, and the issue links in `CONTRIBUTING.md` still point at the upstream issues they cite.

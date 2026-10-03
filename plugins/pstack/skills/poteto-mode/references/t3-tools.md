@@ -29,6 +29,7 @@ The harness's own model list is not the full list. `orchestrator_capabilities` r
 | `readonly: true` | No equivalent. See [Subagent policy](#subagent-policy). |
 | `isolation: "worktree"` | No equivalent. See [Subagent policy](#subagent-policy). |
 | A role value's `@<level>` | An entry in `target.options`. See [Model names](#model-names). |
+| The sheet's `fast mode` line | An entry in `target.options`. See [Fast mode](#fast-mode). |
 
 A `task_status` result is done when `workState` is `result_available`. `waiting_for_children` means the child's turn ended while work it started is still running, so the task is not finished.
 
@@ -40,7 +41,8 @@ poteto-mode's Subagents section applies. These points differ for a `delegate_tas
 
 - The child starts with the `task` text and nothing else. It gets no parent history, so the file-pointers rule matters more: name every file by absolute path.
 - The child may not see the pstack skills. A provider loads only what is installed for it, and a T3 child saw none of them in the session that verified this mapping. Do not tell a child to invoke a skill by name. Give it the absolute path of the file to read first: `poteto-mode/SKILL.md` for the `pstack:poteto-agent` style, `poteto-mode/references/agents/comment-sicko.md` for `pstack:comment-sicko`, and the reviewer or explorer prompt file the skill names for a panel seat.
-- The child runs in the parent's working directory, on the parent's checkout and branch. `delegate_task` has no worktree option, and a child that runs `git worktree add` or `cd` does not move its T3 binding. So use `delegate_task` for read-only seats: panel reviewers, critics, judges, explorers, investigators. Keep writers (code delegates, **swarm** workers, the `orchestrate` and autopilot playbooks) on the harness's own tool, each in its own worktree. On Claude Code that is `isolation: "worktree"`. Codex's `spawn_agent` has no such field, so make the worktree first and name its path in the instructions.
+- The child runs in the parent's working directory, on the parent's checkout and branch. `delegate_task` has no worktree option, and a child that runs `git worktree add` or `cd` does not move its T3 binding. So use `delegate_task` for seats that edit no source: panel reviewers, critics, judges, explorers, investigators, and verifiers. Keep writers (code delegates, **swarm** workers, the `orchestrate` and autopilot playbooks) on the harness's own tool, each in its own worktree. On Claude Code that is `isolation: "worktree"`. Codex's `spawn_agent` has no such field, so make the worktree first and name its path in the instructions.
+- A verifier runs the app and the tests and edits no source, so a `verifiers` value of the form `<providerInstanceId>/<model>` is a `delegate_task` call. Name the exact SHA in the `task`. Where the playbook gives the verifier its own worktree, tell it to add a detached worktree at that SHA in a temporary directory outside the checkout, to run there, and to remove the worktree when it is done. Writing or changing a test is a write, and it stays with a code role on the harness's own tool.
 - Nothing enforces read-only. `interactionMode: "plan"` did not stop a Codex child writing a file when this mapping was verified. Say in the `task` that the child must not change files, and check `git status` when a read-only child returns.
 - The child has `delegate_task` too. Tell a panel seat not to delegate, so the fan-out stays the size the skill set.
 - Provider, model, runtime mode, and interaction mode inherit from the parent unless the call sets them. Leave `runtimeMode` alone: a child that waits for an approval nobody sees does not finish.
@@ -57,11 +59,56 @@ A value's `@<level>` goes in `target.options`. Each model in `orchestrator_capab
 
 Never write a `<providerInstanceId>/<model>` value that `orchestrator_capabilities` did not list in this session.
 
+## Fast mode
+
+A provider can run a child in a faster mode that uses more of the account's allowance, and a provider can have that mode on by default. The Codex models listed `serviceTier` with `priority`, labelled Fast, as the default when this mapping was verified.
+
+The sheet's `fast mode` line sets this for every `delegate_task` call. With `off`, add the option that turns fast mode off to `target.options`, beside the reasoning option: `"serviceTier": "default"` on a Codex model and `"fastMode": false` on a Claude model. On another provider, use the option that `orchestrator_capabilities` labels as fast mode or service tier, and pass nothing when the model lists none. With `provider`, or with no line, pass no fast-mode option.
+
+The line does not reach the harness's own subagent tool. On Claude Code a native subagent has no fast-mode field, and fast mode there is the session's setting.
+
+T3 accepted `"serviceTier": "default"` on a Codex child when this mapping was verified. The child could not read its own service tier, so the effect was not observed.
+
+## Preset
+
+A sheet for a T3 Code thread that runs on Claude Code with a Codex provider. Most work runs on one Claude model at high effort, judgment and synthesis on another at medium, review on Codex at extra-high effort, and verification on Codex at medium. `setup-pstack` starts from it when the session has `delegate_task` and no sheet exists.
+
+```text
+feature, refactoring: sonnet @high
+bug-fix: sonnet @high
+perf-issue: sonnet @high
+hillclimb: sonnet @high
+judgment and prose: opus @medium
+strongest judgment: opus @medium
+verifiers: codex/gpt-6.1-sol @medium
+how explorer: sonnet @high
+how explainer: opus @medium
+why investigators: sonnet @high
+why synthesizer: opus @medium
+reflect tooling: sonnet @high
+reflect judgment, divergent, synthesizer: opus @medium
+arena runners: sonnet @high, opus @medium
+arena cross-judge pool: codex/gpt-6.1-sol @xhigh
+swarm workers: sonnet @high
+architect runners: sonnet @high, opus @medium
+interrogate reviewers: codex/gpt-6.1-sol @xhigh
+
+default effort: session
+fast mode: off
+session hook: on
+```
+
+The orchestrator is the thread's own model, which pstack does not choose. Set it in the T3 composer, with fast mode off there too.
+
+The arena and architect runners write files, so they stay on Claude models. The review panel has one seat, so it has no model diversity of its own. Its diversity comes from the reviewer being a different provider than the author. Add a second entry to `interrogate reviewers` for a second opinion.
+
+Write a preset value only when `orchestrator_capabilities` lists that provider and model in this session. Where it does not, use the stamped default for that role and tell the user.
+
 ## Per-skill notes
 
 | Skill | On T3 |
 |-------|-------|
-| `setup-pstack` | Detect models with `orchestrator_capabilities` as well as the harness's own list. Offer each model of a provider that can run a child as `<providerInstanceId>/<model>`, for the roles that only read: `interrogate reviewers`, `arena cross-judge pool`, and the `how`, `why`, and `reflect` roles. The other roles write files, so they take only the harness's own models. Validate a written value against that list. The sheet path and how it loads are the harness's. Tell the user that a seat on another provider bills that provider's account. |
+| `setup-pstack` | Detect models with `orchestrator_capabilities` as well as the harness's own list. With no sheet, start from the [Preset](#preset) in place of the stamped defaults. Offer each model of a provider that can run a child as `<providerInstanceId>/<model>`, for the roles that edit no source: `interrogate reviewers`, `arena cross-judge pool`, `verifiers`, and the `how`, `why`, and `reflect` roles. The other roles write files, so they take only the harness's own models. Validate a written value against that list. The sheet path and how it loads are the harness's. Ask for the `fast mode` line: `off` or `provider`. Tell the user that a seat on another provider bills that provider's account. |
 | `interrogate` | A reviewer seat with a `<providerInstanceId>/<model>` value is a `delegate_task` call. Put the absolute path of the reviewer prompt file and the diff's range in `task`, and state the read-only rule there. |
 | `arena` | Candidates write files, so they stay on the harness's own tool. The cross-judge only reads, so a `<providerInstanceId>/<model>` value in the cross-judge pool is a `delegate_task` call. |
 | `architect` | The runner panel goes through the **arena** skill, so the same split applies. |

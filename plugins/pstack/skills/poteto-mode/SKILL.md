@@ -157,6 +157,7 @@ Role defaults, stamped from `plugins/pstack/models.json` (edit there, rerun `too
 - hillclimb: `fable`
 - judgment and prose: `opus`
 - strongest judgment: `fable`
+- verifiers: `opus`
 
 ## Reasoning effort
 

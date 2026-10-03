@@ -14,6 +14,7 @@
     { "role": "hillclimb", "models": "strongest", "skill": "poteto-mode" },
     { "role": "judgment and prose", "models": "default", "skill": "poteto-mode" },
     { "role": "strongest judgment", "models": "strongest", "skill": "poteto-mode" },
+    { "role": "verifiers", "models": "default", "skill": "poteto-mode" },
     { "role": "how explorer", "models": "default", "skill": "how" },
     { "role": "how explainer", "models": "default", "skill": "how" },
     { "role": "why investigators", "models": "default", "skill": "why" },

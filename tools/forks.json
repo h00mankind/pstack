@@ -80,7 +80,7 @@
     },
     "plugins/pstack/skills/poteto-mode/playbooks/orchestrate.md": {
       "kind": "port-feature",
-      "why": "Runs workers as background subagents in per-writer worktrees under a ~/.claude/orchestrate store because Claude Code has no cloud worker environment, and keeps human rulings in their original wording.",
+      "why": "Runs workers as background subagents in per-writer worktrees under a ~/.claude/orchestrate store because Claude Code has no cloud worker environment, keeps human rulings in their original wording, and names the verifiers role for a dedicated verifier agent.",
       "since": "0.9.29",
       "upstream": "not-proposed"
     },
@@ -98,7 +98,7 @@
     },
     "plugins/pstack/skills/poteto-mode/playbooks/shipping.md": {
       "kind": "policy",
-      "why": "Lands one PR at a time, cancelling pending merges before any chain change and merging only under a service-enforced head condition.",
+      "why": "Lands one PR at a time, cancelling pending merges before any chain change and merging only under a service-enforced head condition, and runs each per-PR verifier on the verifiers role.",
       "since": "0.9.34",
       "upstream": "not-proposed"
     },

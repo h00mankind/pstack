@@ -669,11 +669,11 @@ export function overrideSheetBlock(models) {
     "A model may carry a reasoning effort, as in `opus @xhigh` (levels: " + models.efforts.join(", ") + "); " +
     "the role then runs through the pstack effort agent of that level, each entry of a panel list on its own. " +
     "`default effort` sets the level for a value without one; `session` keeps the parent session's effort. " +
-    "In a T3 Code thread, a value of the form `<providerInstanceId>/<model>` runs through T3's `delegate_task` tool and not the harness's own subagent tool, as the pstack plugin's `poteto-mode/references/t3-tools.md` describes. " +
+    "In a T3 Code thread, a value of the form `<providerInstanceId>/<model>` runs through T3's `delegate_task` tool and not the harness's own subagent tool, as the pstack plugin's `poteto-mode/references/t3-tools.md` describes, and `fast mode: off` makes each `delegate_task` call turn the provider's fast mode off, where `provider` passes no fast-mode option. " +
     "`session hook: off` stops the Claude Code or Codex SessionStart hook from injecting the poteto-mode mandate; " +
     "any other value, or no line, leaves it on.\n\n" +
     rows +
-    `\n\ndefault effort: ${models.defaultEffort}\nsession hook: on`
+    `\n\ndefault effort: ${models.defaultEffort}\nfast mode: off\nsession hook: on`
   );
 }
 
