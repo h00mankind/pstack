@@ -2,6 +2,12 @@
 
 This file is the release changelog, with one `## <version> - <title>` entry per release, newest first. The Cursor-to-Claude rewrite rules live in [`tools/substitutions.json`](tools/substitutions.json), and the [sync boundary](CONTRIBUTING.md#the-sync-boundary) in `CONTRIBUTING.md` defines how a change to upstream's skill content is declared.
 
+## 0.9.67 - the verifier keeps its different model family
+
+0.9.66 made the Orchestrate playbook's dedicated verifier run on the `verifiers` role and also on a different model family than the worker. Both cannot hold under the defaults, where the two roles name the same model. The different-family rule now decides: the verifier takes the `verifiers` model when its family differs from the worker's, and another family when it does not. So 0.9.66 was wrong to say that nothing changes without an override, and this release makes that true.
+
+The T3 mapping's verifier note now passes the project's `verify` skill by path, because a child on another provider sees no driver skill. Its fast mode note records what a live session showed.
+
 ## 0.9.66 - a verifiers role, a fast mode line, and a T3 preset
 
 `models.json` has a new `verifiers` role. The Shipping playbook's per-PR verifier and the Orchestrate playbook's dedicated verifier agent run on it, where they named no role before. Its default is the single-role default, so nothing changes without an override.
