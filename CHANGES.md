@@ -2,6 +2,18 @@
 
 This file is the release changelog, with one `## <version> - <title>` entry per release, newest first. The Cursor-to-Claude rewrite rules live in [`tools/substitutions.json`](tools/substitutions.json), and the [sync boundary](CONTRIBUTING.md#the-sync-boundary) in `CONTRIBUTING.md` defines how a change to upstream's skill content is declared.
 
+## 0.9.68 - sync to upstream 23e4138 (v0.15.6)
+
+The upstream pin moves from `12d587d` to `23e4138`, upstream v0.15.6, one commit. It adds the `benchmark-checklist` skill and the `principle-explain-the-number` principle, which together vet a measured speedup or regression before anyone reports or acts on it. `poteto-mode` triggers `benchmark-checklist` on a benchmark and indexes the new principle, so the package now carries 32 public skills and 24 principles.
+
+Subagents are fresh by default. A fix round, a follow-up, a retry, and the next queue item go to a new agent with the consolidated brief. A resume is reserved for work that needs state living in the old agent, such as its checkout, uncommitted changes, or a running process. The autopilots hand each next queue item to a fresh owner, owners push after every verifiable unit, and the audit tick judges an owner by its pushed branch and decision trail. The audit tick runs every hour instead of every 30 minutes, and `check-plan.mjs` pins the new cadence. Opening a PR names the run's built-in PR tool first, and the playbooks gain a "Size and stacks" paragraph. Operator-facing defaults under a full-autonomy grant are reported in plain words, with no shorthand token to type back. `technical-writing` drops its fetch-date source lines, and `typescript-best-practices` takes upstream's schema-first reference edits.
+
+Measured with `bun tools/sync.mjs pstack 23e4138`: 6 files updated clean, 2 added, 1 merged three-way, 72 unchanged, 36 excluded, and 5 conflicted files resolved by hand. The conflicts are `SKILL.md`, `autopilot-full.md`, `autopilot-stack.md`, `multi-phase-plan.md`, and `check-plan.mjs`. The sync's denylist rejects the `control-cli` and `control-ui` lines that those conflicts carry, so the run excluded the five paths and the edits were applied by hand afterward.
+
+Port policy is unchanged where it diverges from upstream. The autopilots stop at merge-ready for the operator's click, so the upstream rule that skips a second rebase before the owner's own merge is not ported. The `/goal` removals already matched the port, which never armed one.
+
+This fork takes the sync by merging the `pstack-claude` port's release of it, which the port numbered 0.9.64. The fork had already used 0.9.64 to 0.9.67, so the sync ships here as 0.9.68.
+
 ## 0.9.67 - the verifier keeps its different model family
 
 0.9.66 made the Orchestrate playbook's dedicated verifier run on the `verifiers` role and also on a different model family than the worker. Both cannot hold under the defaults, where the two roles name the same model. The different-family rule now decides: the verifier takes the `verifiers` model when its family differs from the worker's, and another family when it does not. So 0.9.66 was wrong to say that nothing changes without an override, and this release makes that true.
