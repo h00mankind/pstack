@@ -1,8 +1,8 @@
 // One agent run through the fake ExtensionAPI, with the fake pi as the child:
 // its lifecycle, how its end is classified, its output, and stopping it.
 import { describe, expect, test } from "bun:test";
-import { readFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 
 import { alive, flag, listAgents, resultText, sleep, useWorld, waitFor } from "./harness.mjs";
 
@@ -20,6 +20,8 @@ describe("agent tool", () => {
     expect(resultText(result)).not.toContain("draft");
     expect(result.details.status).toBe("completed");
     expect(inv.argv).toEqual([
+      "--extension", join(w.settings.pluginRoot, "pi", "index.ts"),
+      "--skill", join(w.settings.pluginRoot, "skills"),
       "--mode", "rpc",
       "--session-id", flag(inv, "--session-id"),
       "--session-dir", join(w.agentDir, "pstack", "parent-session", "agents"),
@@ -64,6 +66,39 @@ describe("agent tool", () => {
     expect(message.content).toContain("done in bg");
     expect(aliveAtNotice).toBe(false);
     expect((await listAgents(pi, ctx))[0].status).toBe("completed");
+  });
+
+  test("list_agents and the completion notice name the child's transcript, and a resume lists the same path", async () => {
+    const { w, pi, ctx } = setup({ script: { default: [{ sleep: 300 }, { reply: "done" }] } });
+    const { details } = await pi.call("agent", { description: "watch me", prompt: "go", run_in_background: true }, ctx);
+    await waitFor(async () => (await listAgents(pi, ctx))[0].sessionFile);
+    const [running] = await listAgents(pi, ctx);
+    const [inv] = w.invocations();
+    expect(running.status).toBe("running");
+    expect(dirname(running.sessionFile)).toBe(flag(inv, "--session-dir"));
+    expect(basename(running.sessionFile)).toEndWith(`_${flag(inv, "--session-id")}.jsonl`);
+    expect(existsSync(running.sessionFile)).toBe(true);
+
+    await waitFor(() => pi.messages.length === 1);
+    expect(pi.messages[0].message.content).toContain(`transcript: ${running.sessionFile}`);
+    await pi.call("send_message", { to: details.agentId, message: "again" }, ctx);
+    await waitFor(() => pi.messages.length === 2);
+    expect((await listAgents(pi, ctx))[0].sessionFile).toBe(running.sessionFile);
+  });
+
+  test("list_agents names no transcript for an agent whose file is not written, even beside another agent's", async () => {
+    const { w, pi, ctx } = setup();
+    await pi.call("agent", { description: "no file", prompt: "go" }, ctx);
+    await pi.call("agent", { description: "sibling", prompt: "go" }, ctx);
+    const sessionDir = flag(w.invocations()[0], "--session-dir");
+    rmSync(join(sessionDir, readdirSync(sessionDir).find((n) => n.endsWith(`_${flag(w.invocations()[0], "--session-id")}.jsonl`))));
+
+    const [first, sibling] = await listAgents(pi, ctx);
+    expect(first).not.toHaveProperty("sessionFile");
+    expect(basename(sibling.sessionFile)).toEndWith(`_${flag(w.invocations()[1], "--session-id")}.jsonl`);
+
+    rmSync(sessionDir, { recursive: true });
+    expect((await listAgents(pi, ctx)).map((a) => a.sessionFile)).toEqual([undefined, undefined]);
   });
 
   test("an errored last message, a run without a final message, or a non-zero exit is failed, with the error in the notice", async () => {
@@ -191,7 +226,8 @@ describe("agent tool", () => {
     await pi.call("agent", { description: "big", prompt: "x", run_in_background: true }, ctx);
     await waitFor(() => pi.messages.length === 1);
     const { content, details } = pi.messages[0].message;
-    expect(details.outputFile).toBe(join(w.agentDir, "pstack", "parent-session", "agents", `${details.agentId}.out.md`));
+    expect(dirname(details.outputFile)).toBe(join(w.agentDir, "pstack", "parent-session", "agents"));
+    expect(basename(details.outputFile)).toMatch(new RegExp(`^${details.agentId}\\.\\d+\\.out\\.md$`));
     expect(content).toContain(`full output: ${details.outputFile}`);
     expect(Buffer.byteLength(content)).toBeLessThan(51 * 1024);
     expect(content).not.toContain("�");
@@ -207,6 +243,18 @@ describe("agent tool", () => {
     expect(last.status).toBe("completed");
     expect(Buffer.byteLength(last.finalText)).toBeLessThanOrEqual(50 * 1024);
     expect(readFileSync(last.outputFile, "utf8")).toBe(big);
+  });
+
+  test("a resumed run over 50 KB keeps its full output in its own file, so the file an earlier notice names still holds that run's output", async () => {
+    const { pi, ctx } = setup({ script: { default: [{ reply: `RUN:\${prompt} ${"x".repeat(60 * 1024)}` }] } });
+    await pi.call("agent", { description: "big", prompt: "first", run_in_background: true }, ctx);
+    await waitFor(() => pi.messages.length === 1);
+    await pi.call("send_message", { to: "big", message: "second" }, ctx);
+    await waitFor(() => pi.messages.length === 2);
+    const [first, second] = pi.messages.map((m) => m.message.details.outputFile);
+    expect(second).not.toBe(first);
+    expect(readFileSync(first, "utf8").slice(0, 10)).toBe("RUN:first ");
+    expect(readFileSync(second, "utf8").slice(0, 11)).toBe("RUN:second ");
   });
 
   test("an agent whose oversized output cannot be saved still ends, reports once, and can be stopped and messaged", async () => {
@@ -247,7 +295,8 @@ describe("stop_agent", () => {
   });
 
   test("escalates to SIGKILL when the child ignores SIGTERM", async () => {
-    const { w, pi, ctx } = setup({ script: { default: [{ ignoreSigterm: true }, { sleep: 30000 }] } });
+    // Muted, so the abort cannot end the run and let the child exit before the SIGTERM lands.
+    const { w, pi, ctx } = setup({ script: { default: [{ ignoreSigterm: true }, { mute: true }, { sleep: 30000 }] } });
     const { details } = await pi.call("agent", { description: "stubborn", prompt: "x", run_in_background: true }, ctx);
     await w.until("ignoring-sigterm");
     const started = Date.now();
@@ -256,6 +305,21 @@ describe("stop_agent", () => {
     expect(alive(w.invocations()[0].pid)).toBe(false);
     expect(w.logged("sigterm-ignored")).not.toEqual([]);
     expect(Date.now() - started).toBeLessThan(3000);
+  });
+
+  test("sends one SIGTERM and waits the whole kill grace before SIGKILL, even when the exit grace is shorter", async () => {
+    const killGraceMs = 700;
+    const { w, pi, ctx } = setup({
+      script: { default: [{ ignoreSigterm: true }, { mute: true }, { sleep: 30000 }] },
+      settings: { killGraceMs, exitGraceMs: 200 },
+    });
+    const { details } = await pi.call("agent", { description: "stubborn", prompt: "x", run_in_background: true }, ctx);
+    await w.until("ignoring-sigterm");
+    const started = Date.now();
+    await pi.call("stop_agent", { id: details.agentId }, ctx);
+    expect(Date.now() - started).toBeGreaterThanOrEqual(killGraceMs - 50);
+    expect(alive(w.invocations()[0].pid)).toBe(false);
+    expect(w.logged("sigterm-ignored")).toHaveLength(1);
   });
 
   test("a stop returns once the child has exited, without waiting out the kill grace for a group member that ignores SIGTERM", async () => {

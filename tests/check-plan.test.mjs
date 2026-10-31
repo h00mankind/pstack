@@ -46,6 +46,15 @@ describe("plan checklists", () => {
     expect(run(skeleton.replaceAll("- [ ]", "- [x]")).code).toBe(0);
   });
 
+  test("a plan saved with a UTF-8 byte-order mark passes", () => {
+    for (const plan of ["\uFEFF" + skeleton, "\uFEFF---\ntitle: Plan\n---\n" + skeleton]) {
+      expect(run(plan)).toEqual({
+        code: 0,
+        out: expect.stringContaining("1 PR sections, 0 problems"),
+      });
+    }
+  });
+
   for (const heading of [
     "### Arm the program",
     "### Spawn owners",
@@ -79,6 +88,31 @@ describe("plan checklists", () => {
     const result = run(plan);
     expect(result.code).toBe(1);
     expect(result.out).toContain("Close the program has no box");
+  });
+
+  test("fenced examples cannot supply How to read this guidance", () => {
+    const plan = editSection("## How to read this", (body) => "\n```markdown\n" + body + "\n```\n");
+    const result = run(plan);
+    expect(result.code).toBe(1);
+    expect(result.out).toContain('How to read this lacks "One box is one unit of work"');
+  });
+
+  test("fenced examples cannot supply program markers", () => {
+    const plan = skeleton.replace(/(## Program checklist\n)([\s\S]*?)(?=\n## )/, (_, heading, body) =>
+      heading + body.replaceAll("hourly", "frequent") + "\n```text\nhourly\n```\n",
+    );
+    const result = run(plan);
+    expect(result.code).toBe(1);
+    expect(result.out).toContain('Program checklist lacks "/hourly|every hour/"');
+  });
+
+  test("fenced examples cannot supply review gate evidence", () => {
+    const plan = skeleton.replace(/(\*\*Review gate\.\*\*)([\s\S]*?)(?=\*\*Merge\.\*\*)/, (_, heading) =>
+      heading + "\n- [ ] Review the change.\n```text\nscreenshot video operator\n```\n",
+    );
+    const result = run(plan);
+    expect(result.code).toBe(1);
+    for (const word of ["screenshot", "video", "operator"]) expect(result.out).toContain(`Review gate lacks "${word}"`);
   });
 });
 
