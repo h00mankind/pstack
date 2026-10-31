@@ -2,6 +2,12 @@
 
 This file is the release changelog, with one `## <version> - <title>` entry per release, newest first. The Cursor-to-Claude rewrite rules live in [`tools/substitutions.json`](tools/substitutions.json), and the [sync boundary](CONTRIBUTING.md#the-sync-boundary) in `CONTRIBUTING.md` defines how a change to upstream's skill content is declared.
 
+## 0.9.70 - scripts work on their first run again
+
+`watch-pr`, `ship-pr`, and `orch` failed on their first run after a fresh install with `Cannot find package 'commander'`, and worked on every run after. Bun resolves a process's packages before `bootstrap.ts` installs them and does not look again, so the deferred `commander` import still fails in that process. `bootstrap.ts` again reruns the same command in a fresh process after it installs, as upstream does. 0.9.23 had removed that rerun on the belief that the deferred import was enough.
+
+Measured on Bun 1.4.0 by deleting `scripts/node_modules` and running `watch-pr --status-only`: the first run failed before this change and printed the status table after it.
+
 ## 0.9.69 - sync to upstream e43c7ee (v0.15.9)
 
 The upstream pin moves from `23e4138` to `e43c7ee`, upstream v0.15.9, three commits. It adds the `correct` skill, which finds the mistakes agents repeat in a repo and removes each one with architecture, types, a lint, or a test before it writes docs. The package now carries 33 public skills and 24 principles.
