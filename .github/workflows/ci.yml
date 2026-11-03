@@ -44,11 +44,13 @@ jobs:
         run: bun install --frozen-lockfile
       # The runner's first Windows PowerShell launch takes from 2.5 s to over
       # 10 s, and the run steps above use pwsh, so without this step that cost
-      # lands in the first test. Paid here, it leaves the 10 s timeout to catch
-      # a hook launch that is slow every time.
+      # lands in the first test. The first ConvertFrom-Json, which the Muse hook
+      # runs on models.json, took 1.5 s to over 10 s in the first Muse test
+      # with a sheet. Paid here, both leave the 10 s timeout to catch a hook
+      # launch that is slow every time.
       - name: Warm up Windows PowerShell
         shell: powershell
-        run: exit 0
+        run: "'{}' | ConvertFrom-Json | Out-Null"
       - name: Test Windows session hooks
         run: bun test --timeout 10000 tests/session-hook-windows.test.mjs
         env:
@@ -263,6 +265,45 @@ jobs:
           # shellcheck disable=SC2206 # FILES is a glob to expand here
           files=(test/$FILES.test.ts)
           JAVA="$(command -v java)" bash "$GITHUB_WORKSPACE/.github/scripts/statechart-watchdog.sh" node --disable-warning=ExperimentalWarning --test "${files[@]}"
+
+  statechart-windows:
+    name: Statechart on Windows
+    runs-on: windows-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+        working-directory: plugins/pstack/skills/statechart/scripts
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.22.1"
+          package-manager-cache: false
+      - name: Download TLC
+        env:
+          TLA2TOOLS: ${{ runner.temp }}/tla2tools.jar
+        run: |
+          pin=$(node -e 'const [, sum, version] = require("fs").readFileSync("run.ts", "utf8").match(/const TLC_TOOL =\s*"[^"]*sha256:([0-9a-f]{64})\]@([^"]+)"/); console.log(version, sum);')
+          read -r version sum <<< "$pin"
+          curl --fail --location --output "$TLA2TOOLS" "https://github.com/tlaplus/tlaplus/releases/download/v$version/tla2tools.jar"
+          echo "$sum  $TLA2TOOLS" | sha256sum --check
+      # The command spawned /bin/sh and missed TLC's \r\n message ends on
+      # Windows (#345). The checkout has \r\n line ends, so diff ignores them.
+      - name: Chart a spec with a broken rule
+        env:
+          TLA2TOOLS: ${{ runner.temp }}/tla2tools.jar
+          OUT: ${{ runner.temp }}/MediaPlayer
+        run: |
+          corpus=test/corpus/MediaPlayer
+          status=0
+          JAVA="${JAVA_HOME_21_X64:?the runner has no Java 21}/bin/java" node --disable-warning=ExperimentalWarning statechart.ts "$corpus/MediaPlayer.tla" --view "$corpus/view.mjs" --out "$OUT" || status=$?
+          echo "statechart exited $status"
+          test "$status" -eq 1
+          diff --strip-trailing-cr "$corpus/report.md" "$OUT/report.md"
+          diff --strip-trailing-cr "$corpus/chart.mmd" "$OUT/chart.mmd"
 
   shellcheck:
     name: Shell scripts
